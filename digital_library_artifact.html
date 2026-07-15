@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Library Information Retrieval System</title>
+<style>
+/* 
+Digital Library Information Retrieval System
+Style Sheet
+*/
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f8;
+    margin: 20px;
+    color: #333;
+}
+/* Page Heading */
+h1 {
+    text-align: center;
+    color: #003366;
+    margin-bottom: 30px;
+}
+/* Search Area */
+.controls {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+input,
+select,
+button {
+    padding: 10px;
+    font-size: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+input {
+    width: 300px;
+}
+button {
+    background-color: #003366;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #00509e;
+}
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+th {
+    background-color: #003366;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}
+td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+tr:hover {
+    background-color: #f1f7ff;
+}
+/* Status Styling */
+td:last-child {
+    font-weight: bold;
+}
+/* Message */
+#message {
+    text-align: center;
+    color: red;
+    margin-top: 20px;
+    font-weight: bold;
+}
+/* Mobile View */
+@media screen and (max-width:768px){
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    input {
+        width: auto;
+    }
+    table {
+        font-size: 14px;
+    }
+}
+
+</style>
+</head>
+<body>
+<h1>Digital Library Information Retrieval System</h1>
+<div class="controls">
+    <input type="text" id="searchInput" placeholder="Search by Title, Author, ISBN, Year or Keywords">
+    <button id="searchBtn">Search</button>
+    <select id="categoryFilter">
+        <option value="">All Categories</option>
+    </select>
+    <select id="availabilityFilter">
+        <option value="">All Status</option>
+        <option value="Available">Available</option>
+        <option value="Borrowed">Borrowed</option>
+    </select>
+    <button id="resetBtn">Reset</button>
+</div>
+<table>
+<thead>
+<tr>
+<th>ID</th><th>Title</th><th>Author</th><th>Category</th><th>Publisher</th><th>Year</th><th>Status</th>
+</tr>
+</thead>
+<tbody id="bookTable"></tbody>
+</table>
+<p id="message"></p>
+<script>
+// Book data is embedded directly here (instead of being fetched from
+// simibooks.json) so this page works with a plain double-click, without
+// needing a local web server. Browsers block fetch() of local files
+// opened via file://, so embedding avoids that restriction entirely.
+let books = [
+  {
+    "BookID": "BK001",
+    "Title": "Clean Code",
+    "Author": "Robert C. Martin",
+    "Category": "Programming",
+    "Publisher": "Prentice Hall",
+    "PublicationYear": 2008,
+    "ISBN": "9780132350884",
+    "Keywords": "clean code, software engineering, best practices",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK002",
+    "Title": "The Pragmatic Programmer",
+    "Author": "Andrew Hunt; David Thomas",
+    "Category": "Programming",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2019,
+    "ISBN": "9780135957059",
+    "Keywords": "programming, coding, software development",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK003",
+    "Title": "Code Complete",
+    "Author": "Steve McConnell",
+    "Category": "Programming",
+    "Publisher": "Microsoft Press",
+    "PublicationYear": 2004,
+    "ISBN": "9780735619678",
+    "Keywords": "software construction, coding",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK004",
+    "Title": "Head First Java",
+    "Author": "Kathy Sierra; Bert Bates",
+    "Category": "Programming",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2022,
+    "ISBN": "9781491910771",
+    "Keywords": "java, object-oriented programming",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK005",
+    "Title": "Effective Java",
+    "Author": "Joshua Bloch",
+    "Category": "Programming",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2018,
+    "ISBN": "9780134685991",
+    "Keywords": "java, best practices",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK006",
+    "Title": "Python Crash Course",
+    "Author": "Eric Matthes",
+    "Category": "Programming",
+    "Publisher": "No Starch Press",
+    "PublicationYear": 2023,
+    "ISBN": "9781718502703",
+    "Keywords": "python, beginner programming",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK007",
+    "Title": "Learning Python",
+    "Author": "Mark Lutz",
+    "Category": "Programming",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2013,
+    "ISBN": "9781449355739",
+    "Keywords": "python, advanced programming",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK008",
+    "Title": "Think Python",
+    "Author": "Allen B. Downey",
+    "Category": "Programming",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2015,
+    "ISBN": "9781491939369",
+    "Keywords": "python, problem solving",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK009",
+    "Title": "Programming Pearls",
+    "Author": "Jon Bentley",
+    "Category": "Programming",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2000,
+    "ISBN": "9780201657883",
+    "Keywords": "algorithms, programming",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK010",
+    "Title": "Structure and Interpretation of Computer Programs",
+    "Author": "Harold Abelson; Gerald Jay Sussman",
+    "Category": "Programming",
+    "Publisher": "MIT Press",
+    "PublicationYear": 1996,
+    "ISBN": "9780262510875",
+    "Keywords": "computer science, lisp",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK011",
+    "Title": "Database System Concepts",
+    "Author": "Abraham Silberschatz; Henry F. Korth; S. Sudarshan",
+    "Category": "Database Systems",
+    "Publisher": "McGraw-Hill",
+    "PublicationYear": 2019,
+    "ISBN": "9781260084504",
+    "Keywords": "database, sql, dbms",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK012",
+    "Title": "Fundamentals of Database Systems",
+    "Author": "Ramez Elmasri; Shamkant B. Navathe",
+    "Category": "Database Systems",
+    "Publisher": "Pearson",
+    "PublicationYear": 2016,
+    "ISBN": "9780133970777",
+    "Keywords": "database, normalization, sql",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK013",
+    "Title": "SQL Queries for Mere Mortals",
+    "Author": "John L. Viescas; Michael J. Hernandez",
+    "Category": "Database Systems",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2018,
+    "ISBN": "9780134858333",
+    "Keywords": "sql, queries, database",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK014",
+    "Title": "Database Design for Mere Mortals",
+    "Author": "Michael J. Hernandez",
+    "Category": "Database Systems",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2020,
+    "ISBN": "9780136788041",
+    "Keywords": "database design, normalization",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK015",
+    "Title": "SQL in 10 Minutes, Sams Teach Yourself",
+    "Author": "Ben Forta",
+    "Category": "Database Systems",
+    "Publisher": "Sams Publishing",
+    "PublicationYear": 2020,
+    "ISBN": "9780135182796",
+    "Keywords": "sql, database",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK016",
+    "Title": "Artificial Intelligence: A Modern Approach",
+    "Author": "Stuart Russell; Peter Norvig",
+    "Category": "Artificial Intelligence",
+    "Publisher": "Pearson",
+    "PublicationYear": 2021,
+    "ISBN": "9780134610993",
+    "Keywords": "artificial intelligence, machine learning",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK017",
+    "Title": "Deep Learning",
+    "Author": "Ian Goodfellow; Yoshua Bengio; Aaron Courville",
+    "Category": "Artificial Intelligence",
+    "Publisher": "MIT Press",
+    "PublicationYear": 2016,
+    "ISBN": "9780262035613",
+    "Keywords": "deep learning, neural networks",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK018",
+    "Title": "Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow",
+    "Author": "Aurelien Geron",
+    "Category": "Artificial Intelligence",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2022,
+    "ISBN": "9781098125974",
+    "Keywords": "machine learning, tensorflow, python",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK019",
+    "Title": "Machine Learning with Python Cookbook",
+    "Author": "Chris Albon",
+    "Category": "Artificial Intelligence",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2018,
+    "ISBN": "9781491989388",
+    "Keywords": "machine learning, python",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK020",
+    "Title": "Pattern Recognition and Machine Learning",
+    "Author": "Christopher M. Bishop",
+    "Category": "Artificial Intelligence",
+    "Publisher": "Springer",
+    "PublicationYear": 2006,
+    "ISBN": "9780387310732",
+    "Keywords": "pattern recognition, machine learning",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK021",
+    "Title": "Python for Data Analysis",
+    "Author": "Wes McKinney",
+    "Category": "Data Science",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2022,
+    "ISBN": "9781098104030",
+    "Keywords": "python, pandas, data analysis",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK022",
+    "Title": "Practical Statistics for Data Scientists",
+    "Author": "Peter Bruce; Andrew Bruce; Peter Gedeck",
+    "Category": "Data Science",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2020,
+    "ISBN": "9781492072942",
+    "Keywords": "statistics, data science",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK023",
+    "Title": "Data Science from Scratch",
+    "Author": "Joel Grus",
+    "Category": "Data Science",
+    "Publisher": "O'Reilly Media",
+    "PublicationYear": 2019,
+    "ISBN": "9781492041139",
+    "Keywords": "data science, python",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK024",
+    "Title": "An Introduction to Statistical Learning",
+    "Author": "Gareth James; Daniela Witten; Trevor Hastie; Robert Tibshirani",
+    "Category": "Data Science",
+    "Publisher": "Springer",
+    "PublicationYear": 2021,
+    "ISBN": "9781071614174",
+    "Keywords": "statistics, machine learning",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK025",
+    "Title": "Storytelling with Data",
+    "Author": "Cole Nussbaumer Knaflic",
+    "Category": "Data Science",
+    "Publisher": "Wiley",
+    "PublicationYear": 2019,
+    "ISBN": "9781119621492",
+    "Keywords": "data visualization, business intelligence",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK026",
+    "Title": "Computer Networks",
+    "Author": "Andrew S. Tanenbaum; David J. Wetherall",
+    "Category": "Networking",
+    "Publisher": "Pearson",
+    "PublicationYear": 2021,
+    "ISBN": "9780136764052",
+    "Keywords": "networking, tcp/ip",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK027",
+    "Title": "Data Communications and Networking",
+    "Author": "Behrouz A. Forouzan",
+    "Category": "Networking",
+    "Publisher": "McGraw-Hill",
+    "PublicationYear": 2017,
+    "ISBN": "9780073376226",
+    "Keywords": "networking, data communication",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK028",
+    "Title": "Network Security Essentials",
+    "Author": "William Stallings",
+    "Category": "Networking",
+    "Publisher": "Pearson",
+    "PublicationYear": 2021,
+    "ISBN": "9780136641802",
+    "Keywords": "network security, cryptography",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK029",
+    "Title": "TCP/IP Illustrated Volume 1",
+    "Author": "W. Richard Stevens",
+    "Category": "Networking",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2011,
+    "ISBN": "9780321336316",
+    "Keywords": "tcp/ip, network protocols",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK030",
+    "Title": "Computer Networking: A Top-Down Approach",
+    "Author": "James F. Kurose; Keith W. Ross",
+    "Category": "Networking",
+    "Publisher": "Pearson",
+    "PublicationYear": 2021,
+    "ISBN": "9780136681556",
+    "Keywords": "computer networking, internet",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK031",
+    "Title": "Computer Security: Principles and Practice",
+    "Author": "William Stallings; Lawrie Brown",
+    "Category": "Cybersecurity",
+    "Publisher": "Pearson",
+    "PublicationYear": 2023,
+    "ISBN": "9780137587988",
+    "Keywords": "cybersecurity, computer security",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK032",
+    "Title": "Hacking: The Art of Exploitation",
+    "Author": "Jon Erickson",
+    "Category": "Cybersecurity",
+    "Publisher": "No Starch Press",
+    "PublicationYear": 2018,
+    "ISBN": "9781593279738",
+    "Keywords": "ethical hacking, security",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK033",
+    "Title": "Cybersecurity Essentials",
+    "Author": "Charles J. Brooks",
+    "Category": "Cybersecurity",
+    "Publisher": "Wiley",
+    "PublicationYear": 2023,
+    "ISBN": "9781394187133",
+    "Keywords": "cybersecurity, network security",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK034",
+    "Title": "The Web Application Hacker's Handbook",
+    "Author": "Dafydd Stuttard; Marcus Pinto",
+    "Category": "Cybersecurity",
+    "Publisher": "Wiley",
+    "PublicationYear": 2011,
+    "ISBN": "9781118026472",
+    "Keywords": "web security, penetration testing",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK035",
+    "Title": "Cryptography and Network Security",
+    "Author": "William Stallings",
+    "Category": "Cybersecurity",
+    "Publisher": "Pearson",
+    "PublicationYear": 2017,
+    "ISBN": "9780134444284",
+    "Keywords": "cryptography, network security",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK036",
+    "Title": "Software Engineering",
+    "Author": "Ian Sommerville",
+    "Category": "Software Engineering",
+    "Publisher": "Pearson",
+    "PublicationYear": 2015,
+    "ISBN": "9780133943030",
+    "Keywords": "software engineering, software process",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK037",
+    "Title": "Design Patterns: Elements of Reusable Object-Oriented Software",
+    "Author": "Erich Gamma; Richard Helm; Ralph Johnson; John Vlissides",
+    "Category": "Software Engineering",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 1994,
+    "ISBN": "9780201633610",
+    "Keywords": "design patterns, object-oriented programming",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK038",
+    "Title": "Refactoring: Improving the Design of Existing Code",
+    "Author": "Martin Fowler",
+    "Category": "Software Engineering",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2018,
+    "ISBN": "9780134757599",
+    "Keywords": "refactoring, clean code",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK039",
+    "Title": "The Mythical Man-Month",
+    "Author": "Frederick P. Brooks Jr.",
+    "Category": "Software Engineering",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 1995,
+    "ISBN": "9780201835953",
+    "Keywords": "software project management",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK040",
+    "Title": "Continuous Delivery",
+    "Author": "Jez Humble; David Farley",
+    "Category": "Software Engineering",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 2010,
+    "ISBN": "9780321601919",
+    "Keywords": "devops, continuous delivery",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK041",
+    "Title": "Operating System Concepts",
+    "Author": "Abraham Silberschatz; Peter B. Galvin; Greg Gagne",
+    "Category": "Operating Systems",
+    "Publisher": "Wiley",
+    "PublicationYear": 2018,
+    "ISBN": "9781119456339",
+    "Keywords": "operating systems, processes, memory management",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK042",
+    "Title": "Modern Operating Systems",
+    "Author": "Andrew S. Tanenbaum; Herbert Bos",
+    "Category": "Operating Systems",
+    "Publisher": "Pearson",
+    "PublicationYear": 2014,
+    "ISBN": "9780133591620",
+    "Keywords": "operating systems, kernel",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK043",
+    "Title": "Operating Systems: Three Easy Pieces",
+    "Author": "Remzi H. Arpaci-Dusseau; Andrea C. Arpaci-Dusseau",
+    "Category": "Operating Systems",
+    "Publisher": "Arpaci-Dusseau Books",
+    "PublicationYear": 2018,
+    "ISBN": "9781985086593",
+    "Keywords": "operating systems, virtual memory, file systems",
+    "Availability": "Borrowed"
+  },
+  {
+    "BookID": "BK044",
+    "Title": "Cloud Computing: Concepts, Technology & Architecture",
+    "Author": "Thomas Erl; Ricardo Puttini; Zaigham Mahmood",
+    "Category": "Cloud Computing",
+    "Publisher": "Prentice Hall",
+    "PublicationYear": 2013,
+    "ISBN": "9780133387520",
+    "Keywords": "cloud computing, distributed systems",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK045",
+    "Title": "Architecting the Cloud",
+    "Author": "Michael J. Kavis",
+    "Category": "Cloud Computing",
+    "Publisher": "Wiley",
+    "PublicationYear": 2014,
+    "ISBN": "9781118617618",
+    "Keywords": "cloud architecture, aws",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK046",
+    "Title": "Cloud Native Patterns",
+    "Author": "Cornelia Davis",
+    "Category": "Cloud Computing",
+    "Publisher": "Manning",
+    "PublicationYear": 2019,
+    "ISBN": "9781617294297",
+    "Keywords": "cloud native, microservices",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK047",
+    "Title": "Introduction to Algorithms",
+    "Author": "Thomas H. Cormen; Charles E. Leiserson; Ronald L. Rivest; Clifford Stein",
+    "Category": "Algorithms & Mathematics",
+    "Publisher": "MIT Press",
+    "PublicationYear": 2022,
+    "ISBN": "9780262046305",
+    "Keywords": "algorithms, data structures",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK048",
+    "Title": "The Algorithm Design Manual",
+    "Author": "Steven S. Skiena",
+    "Category": "Algorithms & Mathematics",
+    "Publisher": "Springer",
+    "PublicationYear": 2020,
+    "ISBN": "9783030542559",
+    "Keywords": "algorithms, problem solving",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK049",
+    "Title": "Concrete Mathematics",
+    "Author": "Ronald L. Graham; Donald E. Knuth; Oren Patashnik",
+    "Category": "Algorithms & Mathematics",
+    "Publisher": "Addison-Wesley",
+    "PublicationYear": 1994,
+    "ISBN": "9780201558029",
+    "Keywords": "discrete mathematics, algorithms",
+    "Availability": "Available"
+  },
+  {
+    "BookID": "BK050",
+    "Title": "Discrete Mathematics and Its Applications",
+    "Author": "Kenneth H. Rosen",
+    "Category": "Algorithms & Mathematics",
+    "Publisher": "McGraw-Hill",
+    "PublicationYear": 2019,
+    "ISBN": "9781259676512",
+    "Keywords": "discrete mathematics, logic, graphs",
+    "Availability": "Available"
+  }
+];
+
+// Populate the page as soon as the data is ready
+loadCategories();
+displayBooks(books);
+// Display books
+function displayBooks(bookList){
+    const table = document.getElementById("bookTable");
+    const message = document.getElementById("message");
+    table.innerHTML = "";
+    if(bookList.length === 0){
+        message.textContent = "No books found.";
+        return;
+    }
+    message.textContent = "";
+    bookList.forEach(book => {
+        table.innerHTML += `
+        <tr>
+            <td>${book.BookID}</td>
+            <td>${book.Title}</td>
+            <td>${book.Author}</td>
+            <td>${book.Category}</td>
+            <td>${book.Publisher}</td>
+            <td>${book.PublicationYear}</td>
+            <td>${book.Availability}</td>
+        </tr>
+        `;
+    });
+}
+// Create category list
+function loadCategories(){
+    const categoryFilter =
+    document.getElementById("categoryFilter");
+    const categories = 
+    [...new Set(books.map(book => book.Category))];
+    categories.forEach(category => {
+        let option = document.createElement("option");
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+}
+// Search and filter function
+function searchBooks(){
+    let keyword =
+    document
+    .getElementById("searchInput")
+    .value
+    .toLowerCase()
+    .trim();
+    let selectedCategory =
+    document
+    .getElementById("categoryFilter")
+    .value;
+    let selectedStatus =
+    document
+    .getElementById("availabilityFilter")
+    .value;
+    let results = books.filter(book => {
+        let searchText = `
+        ${book.Title}
+        ${book.Author}
+        ${book.Category}
+        ${book.ISBN}
+        ${book.Keywords || ""}
+        ${book.PublicationYear}
+        `.toLowerCase();
+        let matchesSearch =
+        searchText.includes(keyword);
+        let matchesCategory =
+        selectedCategory === "" ||
+        book.Category === selectedCategory;
+        let matchesStatus =
+        selectedStatus === "" ||
+        book.Availability === selectedStatus;
+        return matchesSearch &&
+               matchesCategory &&
+               matchesStatus;
+    });
+    displayBooks(results);
+}
+// Search button
+document
+.getElementById("searchBtn")
+.addEventListener("click", searchBooks);
+// Live search
+document
+.getElementById("searchInput")
+.addEventListener("input", searchBooks);
+// Category filter
+document
+.getElementById("categoryFilter")
+.addEventListener("change", searchBooks);
+// Availability filter
+document
+.getElementById("availabilityFilter")
+.addEventListener("change", searchBooks);
+// Reset button
+document
+.getElementById("resetBtn")
+.addEventListener("click", function(){
+    document.getElementById("searchInput").value = "";
+    document.getElementById("categoryFilter").value = "";
+    document.getElementById("availabilityFilter").value = "";
+    displayBooks(books);
+});
+
+</script>
+</body>
+</html>
